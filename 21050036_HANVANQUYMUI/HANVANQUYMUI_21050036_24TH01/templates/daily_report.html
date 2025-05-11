@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}Báo Cáo Ngày - Hệ Thống Quản Lý Bán Hàng{% endblock %}
+
+{% block header %}Báo Cáo Ngày: {{ date.strftime('%d-%m-%Y') }}{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <a href="{{ url_for('reports') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Quay Lại Báo Cáo
+    </a>
+    <button class="btn btn-primary ms-2" onclick="window.print()">
+        <i class="fas fa-print me-2"></i>In Báo Cáo
+    </button>
+</div>
+
+<div class="row">
+    <div class="col-md-3 mb-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title">Tổng Doanh Thu</h5>
+                <h2>{{ total_sales|round(2) }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title">Đơn Hàng</h5>
+                <h2>{{ order_count }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h5 class="card-title">Giá Trị Đơn Trung Bình</h5>
+                <h2>{{ (total_sales / order_count)|round(2) if order_count > 0 else 0 }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <h5 class="card-title">Sản Phẩm Đã Bán</h5>
+                <h2>{{ orders|sum(attribute='items'|length) }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Đơn Hàng Ngày {{ date.strftime('%d-%m-%Y') }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Mã Đơn</th>
+                                <th>Khách Hàng</th>
+                                <th>Thời Gian</th>
+                                <th>Sản Phẩm</th>
+                                <th class="text-end">Số Tiền</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in orders %}
+                            <tr>
+                                <td><a href="{{ url_for('view_order', id=order.id) }}">{{ order.order_number }}</a></td>
+                                <td>{{ order.customer.name }}</td>
+                                <td>{{ order.order_date.strftime('%H:%M') }}</td>
+                                <td>{{ order.items|length }}</td>
+                                <td class="text-end">{{ order.total_amount|round(2) }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center">Không có đơn hàng nào trong ngày này</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th colspan="4" class="text-end">Tổng:</th>
+                                <th class="text-end">{{ total_sales|round(2) }}</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Sản Phẩm Bán Chạy</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Sản Phẩm</th>
+                                <th>Số Lượng</th>
+                                <th class="text-end">Doanh Thu</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in top_products %}
+                            <tr>
+                                <td>{{ product.name }}</td>
+                                <td>{{ product.total_sold }}</td>
+                                <td class="text-end">{{ product.total_revenue|round(2) }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3" class="text-center">Không có dữ liệu</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

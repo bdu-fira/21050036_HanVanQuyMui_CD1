@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Tổng Quan - Hệ Thống Quản Lý Bán Hàng{% endblock %}
+
+{% block header %}Tổng Quan{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3 mb-4">
+        <div class="card bg-primary text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-uppercase">Doanh Thu Hôm Nay</h6>
+                        <h2 class="mb-0">{{ today_sales|round(2) }}</h2>
+                    </div>
+                    <i class="fas fa-dollar-sign fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="card bg-success text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-uppercase">Tổng Sản Phẩm</h6>
+                        <h2 class="mb-0">{{ product_count }}</h2>
+                    </div>
+                    <i class="fas fa-box fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="card bg-warning text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-uppercase">Tổng Khách Hàng</h6>
+                        <h2 class="mb-0">{{ customer_count }}</h2>
+                    </div>
+                    <i class="fas fa-users fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="card bg-info text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-uppercase">Tổng Đơn Hàng</h6>
+                        <h2 class="mb-0">{{ order_count }}</h2>
+                    </div>
+                    <i class="fas fa-shopping-cart fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Đơn Hàng Gần Đây</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Mã Đơn</th>
+                                <th>Khách Hàng</th>
+                                <th>Ngày</th>
+                                <th>Số Tiền</th>
+                                <th>Thao Tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in recent_orders %}
+                            <tr>
+                                <td>{{ order.order_number }}</td>
+                                <td>{{ order.customer.name }}</td>
+                                <td>{{ order.order_date.strftime('%d-%m-%Y %H:%M') }}</td>
+                                <td>{{ order.total_amount|round(2) }}</td>
+                                <td>
+                                    <a href="{{ url_for('view_order', id=order.id) }}" class="btn btn-sm btn-info">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center">Không tìm thấy đơn hàng nào</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Sản Phẩm Bán Chạy</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Sản Phẩm</th>
+                                <th>Đã Bán</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in top_products %}
+                            <tr>
+                                <td>{{ product.name }}</td>
+                                <td>{{ product.total_sold }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="2" class="text-center">Không có dữ liệu</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Thao Tác Nhanh</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('create_order') }}" class="btn btn-primary">
+                        <i class="fas fa-plus-circle me-2"></i>Tạo Đơn Hàng Mới
+                    </a>
+                    <a href="{{ url_for('add_product') }}" class="btn btn-success">
+                        <i class="fas fa-plus-circle me-2"></i>Thêm Sản Phẩm Mới
+                    </a>
+                    <a href="{{ url_for('add_customer') }}" class="btn btn-warning">
+                        <i class="fas fa-plus-circle me-2"></i>Thêm Khách Hàng Mới
+                    </a>
+                    <a href="{{ url_for('reports') }}" class="btn btn-info">
+                        <i class="fas fa-chart-bar me-2"></i>Xem Báo Cáo
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

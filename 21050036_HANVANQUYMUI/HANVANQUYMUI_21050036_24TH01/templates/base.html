@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Hệ Thống Quản Lý Bán Hàng{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block styles %}{% endblock %}
+</head>
+<body>
+    {% if 'token' in session %}
+    <!-- Navbar cho người dùng đã đăng nhập -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('dashboard') }}">Hệ Thống Quản Lý Bán Hàng</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
+                            <i class="fas fa-tachometer-alt me-1"></i>Tổng Quan
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'categories' %}active{% endif %}" href="{{ url_for('categories') }}">
+                            <i class="fas fa-tags me-1"></i>Danh Mục
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'products' %}active{% endif %}" href="{{ url_for('products') }}">
+                            <i class="fas fa-box me-1"></i>Sản Phẩm
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'customers' %}active{% endif %}" href="{{ url_for('customers') }}">
+                            <i class="fas fa-users me-1"></i>Khách Hàng
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'orders' %}active{% endif %}" href="{{ url_for('orders') }}">
+                            <i class="fas fa-shopping-cart me-1"></i>Đơn Hàng
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'reports' %}active{% endif %}" href="{{ url_for('reports') }}">
+                            <i class="fas fa-chart-bar me-1"></i>Báo Cáo
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user me-1"></i>{{ session['username'] }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}">Đăng Xuất</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-3">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% if request.endpoint == 'dashboard' %}
+        <!-- Hiển thị tổng quan và danh sách sản phẩm -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-4">
+                <div class="card bg-primary text-white h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-uppercase">Doanh Thu Hôm Nay</h6>
+                                <h2 class="mb-0">{{ today_sales|round(2) }}</h2>
+                            </div>
+                            <i class="fas fa-dollar-sign fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="card bg-success text-white h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-uppercase">Tổng Sản Phẩm</h6>
+                                <h2 class="mb-0">{{ product_count }}</h2>
+                            </div>
+                            <i class="fas fa-box fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="card bg-warning text-white h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-uppercase">Tổng Khách Hàng</h6>
+                                <h2 class="mb-0">{{ customer_count }}</h2>
+                            </div>
+                            <i class="fas fa-users fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="card bg-info text-white h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-uppercase">Tổng Đơn Hàng</h6>
+                                <h2 class="mb-0">{{ order_count }}</h2>
+                            </div>
+                            <i class="fas fa-shopping-cart fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">Đơn Hàng Gần Đây</h5>
+                        <a href="{{ url_for('orders') }}" class="btn btn-sm btn-outline-primary">Xem Tất Cả</a>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Mã Đơn</th>
+                                        <th>Khách Hàng</th>
+                                        <th>Ngày</th>
+                                        <th>Số Tiền</th>
+                                        <th>Thao Tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for order in recent_orders %}
+                                    <tr>
+                                        <td>{{ order.order_number }}</td>
+                                        <td>{{ order.customer.name }}</td>
+                                        <td>{{ order.order_date.strftime('%d-%m-%Y %H:%M') }}</td>
+                                        <td>{{ order.total_amount|round(2) }}</td>
+                                        <td>
+                                            <a href="{{ url_for('view_order', id=order.id) }}" class="btn btn-sm btn-info">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="5" class="text-center">Không tìm thấy đơn hàng nào</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Sản Phẩm Bán Chạy</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Sản Phẩm</th>
+                                        <th>Đã Bán</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for product in top_products %}
+                                    <tr>
+                                        <td>{{ product.name }}</td>
+                                        <td>{{ product.total_sold }}</td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="2" class="text-center">Không có dữ liệu</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Thao Tác Nhanh</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="{{ url_for('create_order') }}" class="btn btn-primary">
+                                <i class="fas fa-plus-circle me-2"></i>Tạo Đơn Hàng Mới
+                            </a>
+                            <a href="{{ url_for('add_product') }}" class="btn btn-success">
+                                <i class="fas fa-plus-circle me-2"></i>Thêm Sản Phẩm Mới
+                            </a>
+                            <a href="{{ url_for('add_customer') }}" class="btn btn-warning">
+                                <i class="fas fa-plus-circle me-2"></i>Thêm Khách Hàng Mới
+                            </a>
+                            <a href="{{ url_for('reports') }}" class="btn btn-info">
+                                <i class="fas fa-chart-bar me-2"></i>Xem Báo Cáo
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Phần danh sách sản phẩm -->
+        <h2 class="mb-3">Danh Sách Sản Phẩm</h2>
+        <div class="mb-4">
+            <div class="row">
+                <div class="col-md-8">
+                    <form action="{{ url_for('dashboard') }}" method="GET" class="d-flex">
+                        <select name="category_id" class="form-select me-2" style="width: 200px;">
+                            <option value="">Tất Cả Danh Mục</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}" {% if current_category == category.id %}selected{% endif %}>{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <input type="text" name="search" class="form-control me-2" placeholder="Tìm kiếm sản phẩm..." value="{{ search_query }}">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search me-1"></i>Tìm Kiếm
+                        </button>
+                    </form>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-outline-secondary" id="grid-view">
+                            <i class="fas fa-th"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" id="list-view">
+                            <i class="fas fa-list"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row" id="products-grid">
+            {% for product in products %}
+            <div class="col-md-4 col-sm-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-img-top text-center pt-3">
+                        {% if product.image_path %}
+                        <img src="{{ url_for('static', filename=product.image_path) }}" alt="{{ product.name }}" class="product-image" style="height: 150px; object-fit: contain;">
+                        {% else %}
+                        <div class="text-center p-4 bg-light">
+                            <i class="fas fa-image fa-4x text-muted"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">{{ product.name }}</h5>
+                        <p class="card-text text-muted">
+                            {% if product.category %}
+                            <span class="badge bg-secondary">{{ product.category.name }}</span>
+                            {% endif %}
+                        </p>
+                        <p class="card-text">
+                            <strong class="text-primary">{{ product.price|round(2) }}</strong>
+                        </p>
+                        <p class="card-text">
+                            <small>Tồn kho: 
+                                <span class="badge {% if product.stock > 10 %}bg-success{% elif product.stock > 0 %}bg-warning{% else %}bg-danger{% endif %}">
+                                    {{ product.stock }}
+                                </span>
+                            </small>
+                        </p>
+                        <div class="mt-auto">
+                            <a href="{{ url_for('view_product', id=product.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye me-1"></i>Xem Chi Tiết
+                            </a>
+                            {% if product.stock > 0 %}
+                            <button class="btn btn-sm btn-primary add-to-cart" data-id="{{ product.id }}" data-name="{{ product.name }}" data-price="{{ product.price }}">
+                                <i class="fas fa-shopping-cart me-1"></i>Thêm Vào Giỏ
+                            </button>
+                            {% else %}
+                            <button class="btn btn-sm btn-secondary" disabled>
+                                <i class="fas fa-shopping-cart me-1"></i>Hết Hàng
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="col-12">
+                <div class="alert alert-info">
+                    Không tìm thấy sản phẩm nào.
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="table-responsive d-none" id="products-list">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Hình Ảnh</th>
+                        <th>Tên Sản Phẩm</th>
+                        <th>Danh Mục</th>
+                        <th>Giá</th>
+                        <th>Tồn Kho</th>
+                        <th>Thao Tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr>
+                        <td>
+                            {% if product.image_path %}
+                            <img src="{{ url_for('static', filename=product.image_path) }}" alt="{{ product.name }}" class="img-thumbnail" style="max-width: 50px;">
+                            {% else %}
+                            <div class="text-center text-muted">
+                                <i class="fas fa-image"></i>
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td>{{ product.name }}</td>
+                        <td>{{ product.category.name if product.category else 'Chưa phân loại' }}</td>
+                        <td>{{ product.price|round(2) }}</td>
+                        <td>
+                            <span class="badge {% if product.stock > 10 %}bg-success{% elif product.stock > 0 %}bg-warning{% else %}bg-danger{% endif %}">
+                                {{ product.stock }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('view_product', id=product.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            {% if product.stock > 0 %}
+                            <button class="btn btn-sm btn-primary add-to-cart" data-id="{{ product.id }}" data-name="{{ product.name }}" data-price="{{ product.price }}">
+                                <i class="fas fa-shopping-cart"></i>
+                            </button>
+                            {% else %}
+                            <button class="btn btn-sm btn-secondary" disabled>
+                                <i class="fas fa-shopping-cart"></i>
+                            </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center">Không tìm thấy sản phẩm nào.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Modal giỏ hàng -->
+        <div class="modal fade" id="cartModal" tabindex="-1" aria-labelledby="cartModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="cartModalLabel">Giỏ Hàng</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="cart-items">
+                            <!-- Các sản phẩm trong giỏ hàng sẽ được hiển thị ở đây -->
+                        </div>
+                        <div class="text-end mt-3">
+                            <h5>Tổng cộng: <span id="cart-total">0</span></h5>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                        <button type="button" class="btn btn-primary" id="checkout-btn">Thanh Toán</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        {% block content %}{% endblock %}
+        {% endif %}
+    </div>
+    {% else %}
+    <!-- Navbar cho người dùng chưa đăng nhập -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">Hệ Thống Quản Lý Bán Hàng</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('login') }}">Đăng Nhập</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('register') }}">Đăng Ký</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% if request.endpoint == 'index' %}
+        <!-- Nội dung trang chủ cho người dùng chưa đăng nhập -->
+        <div class="row">
+            <div class="col-12">
+                <h1 class="mb-4">Danh Sách Sản Phẩm</h1>
+                
+                <div class="mb-4">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <form action="{{ url_for('index') }}" method="GET" class="d-flex">
+                                <select name="category_id" class="form-select me-2" style="width: 200px;">
+                                    <option value="">Tất Cả Danh Mục</option>
+                                    {% for category in categories %}
+                                    <option value="{{ category.id }}" {% if current_category == category.id %}selected{% endif %}>{{ category.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <input type="text" name="search" class="form-control me-2" placeholder="Tìm kiếm sản phẩm..." value="{{ search_query }}">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search me-1"></i>Tìm Kiếm
+                                </button>
+                            </form>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-outline-secondary" id="grid-view-auth">
+                                    <i class="fas fa-th"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" id="list-view-auth">
+                                    <i class="fas fa-list"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row" id="products-grid-auth">
+                    {% for product in products %}
+                    <div class="col-md-4 col-sm-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-img-top text-center pt-3">
+                                {% if product.image_path %}
+                                <img src="{{ url_for('static', filename=product.image_path) }}" alt="{{ product.name }}" class="product-image" style="height: 150px; object-fit: contain;">
+                                {% else %}
+                                <div class="text-center p-4 bg-light">
+                                    <i class="fas fa-image fa-4x text-muted"></i>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title">{{ product.name }}</h5>
+                                <p class="card-text text-muted">
+                                    {% if product.category %}
+                                    <span class="badge bg-secondary">{{ product.category.name }}</span>
+                                    {% endif %}
+                                </p>
+                                <p class="card-text">
+                                    <strong class="text-primary">{{ product.price|round(2) }}</strong>
+                                </p>
+                                <p class="card-text">
+                                    <small>Tồn kho: 
+                                        <span class="badge {% if product.stock > 10 %}bg-success{% elif product.stock > 0 %}bg-warning{% else %}bg-danger{% endif %}">
+                                            {{ product.stock }}
+                                        </span>
+                                    </small>
+                                </p>
+                                <div class="mt-auto">
+                                    <a href="{{ url_for('view_product', id=product.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye me-1"></i>Xem Chi Tiết
+                                    </a>
+                                    {% if product.stock > 0 %}
+                                    <button class="btn btn-sm btn-primary add-to-cart-auth" data-id="{{ product.id }}" data-name="{{ product.name }}" data-price="{{ product.price }}">
+                                        <i class="fas fa-shopping-cart me-1"></i>Thêm Vào Giỏ
+                                    </button>
+                                    {% else %}
+                                    <button class="btn btn-sm btn-secondary" disabled>
+                                        <i class="fas fa-shopping-cart me-1"></i>Hết Hàng
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            Không tìm thấy sản phẩm nào.
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="table-responsive d-none" id="products-list-auth">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Hình Ảnh</th>
+                                <th>Tên Sản Phẩm</th>
+                                <th>Danh Mục</th>
+                                <th>Giá</th>
+                                <th>Tồn Kho</th>
+                                <th>Thao Tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in products %}
+                            <tr>
+                                <td>
+                                    {% if product.image_path %}
+                                    <img src="{{ url_for('static', filename=product.image_path) }}" alt="{{ product.name }}" class="img-thumbnail" style="max-width: 50px;">
+                                    {% else %}
+                                    <div class="text-center text-muted">
+                                        <i class="fas fa-image"></i>
+                                    </div>
+                                    {% endif %}
+                                </td>
+                                <td>{{ product.name }}</td>
+                                <td>{{ product.category.name if product.category else 'Chưa phân loại' }}</td>
+                                <td>{{ product.price|round(2) }}</td>
+                                <td>
+                                    <span class="badge {% if product.stock > 10 %}bg-success{% elif product.stock > 0 %}bg-warning{% else %}bg-danger{% endif %}">
+                                        {{ product.stock }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('view_product', id=product.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if product.stock > 0 %}
+                                    <button class="btn btn-sm btn-primary add-to-cart-auth" data-id="{{ product.id }}" data-name="{{ product.name }}" data-price="{{ product.price }}">
+                                        <i class="fas fa-shopping-cart"></i>
+                                    </button>
+                                    {% else %}
+                                    <button class="btn btn-sm btn-secondary" disabled>
+                                        <i class="fas fa-shopping-cart"></i>
+                                    </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center">Không tìm thấy sản phẩm nào.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Modal giỏ hàng -->
+                <div class="modal fade" id="cartModalAuth" tabindex="-1" aria-labelledby="cartModalAuthLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="cartModalAuthLabel">Giỏ Hàng</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div id="cart-items-auth">
+                                    <!-- Các sản phẩm trong giỏ hàng sẽ được hiển thị ở đây -->
+                                </div>
+                                <div class="text-end mt-3">
+                                    <h5>Tổng cộng: <span id="cart-total-auth">0</span></h5>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                                <a href="{{ url_for('login') }}" class="btn btn-primary">Đăng Nhập Để Thanh Toán</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        {% block auth_content %}{% endblock %}
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    
+    {% if request.endpoint == 'dashboard' or request.endpoint == 'index' %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Chuyển đổi giữa chế độ xem lưới và danh sách
+            const gridView = document.getElementById('grid-view');
+            const listView = document.getElementById('list-view');
+            const productsGrid = document.getElementById('products-grid');
+            const productsList = document.getElementById('products-list');
+            
+            if (gridView && listView) {
+                gridView.addEventListener('click', function() {
+                    productsGrid.classList.remove('d-none');
+                    productsList.classList.add('d-none');
+                    gridView.classList.add('active');
+                    listView.classList.remove('active');
+                });
+                
+                listView.addEventListener('click', function() {
+                    productsGrid.classList.add('d-none');
+                    productsList.classList.remove('d-none');
+                    gridView.classList.remove('active');
+                    listView.classList.add('active');
+                });
+            }
+            
+            // Chuyển đổi giữa chế độ xem lưới và danh sách cho phần auth
+            const gridViewAuth = document.getElementById('grid-view-auth');
+            const listViewAuth = document.getElementById('list-view-auth');
+            const productsGridAuth = document.getElementById('products-grid-auth');
+            const productsListAuth = document.getElementById('products-list-auth');
+            
+            if (gridViewAuth && listViewAuth) {
+                gridViewAuth.addEventListener('click', function() {
+                    productsGridAuth.classList.remove('d-none');
+                    productsListAuth.classList.add('d-none');
+                    gridViewAuth.classList.add('active');
+                    listViewAuth.classList.remove('active');
+                });
+                
+                listViewAuth.addEventListener('click', function() {
+                    productsGridAuth.classList.add('d-none');
+                    productsListAuth.classList.remove('d-none');
+                    gridViewAuth.classList.remove('active');
+                    listViewAuth.classList.add('active');
+                });
+            }
+            
+            // Xử lý giỏ hàng
+            const addToCartButtons = document.querySelectorAll('.add-to-cart');
+            const cartModal = document.getElementById('cartModal') ? new bootstrap.Modal(document.getElementById('cartModal')) : null;
+            const cartItems = document.getElementById('cart-items');
+            const cartTotal = document.getElementById('cart-total');
+            const checkoutBtn = document.getElementById('checkout-btn');
+            
+            // Xử lý giỏ hàng cho phần auth
+            const addToCartButtonsAuth = document.querySelectorAll('.add-to-cart-auth');
+            const cartModalAuth = document.getElementById('cartModalAuth') ? new bootstrap.Modal(document.getElementById('cartModalAuth')) : null;
+            const cartItemsAuth = document.getElementById('cart-items-auth');
+            const cartTotalAuth = document.getElementById('cart-total-auth');
+            
+            // Khởi tạo giỏ hàng từ localStorage
+            let cart = JSON.parse(localStorage.getItem('cart')) || [];
+            
+            // Cập nhật hiển thị giỏ hàng
+            function updateCartDisplay() {
+                if (cartItems) {
+                    cartItems.innerHTML = '';
+                    let total = 0;
+                    
+                    if (cart.length === 0) {
+                        cartItems.innerHTML = '<p class="text-center">Giỏ hàng trống</p>';
+                        cartTotal.textContent = '0';
+                        return;
+                    }
+                    
+                    const table = document.createElement('table');
+                    table.className = 'table';
+                    
+                    const thead = document.createElement('thead');
+                    thead.innerHTML = `
+                        <tr>
+                            <th>Sản Phẩm</th>
+                            <th>Giá</th>
+                            <th>Số Lượng</th>
+                            <th>Thành Tiền</th>
+                            <th></th>
+                        </tr>
+                    `;
+                    
+                    const tbody = document.createElement('tbody');
+                    
+                    cart.forEach((item, index) => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${item.name}</td>
+                            <td>${item.price}</td>
+                            <td>
+                                <div class="input-group input-group-sm" style="width: 100px;">
+                                    <button class="btn btn-outline-secondary decrease-quantity" data-index="${index}">-</button>
+                                    <input type="text" class="form-control text-center" value="${item.quantity}" readonly>
+                                    <button class="btn btn-outline-secondary increase-quantity" data-index="${index}">+</button>
+                                </div>
+                            </td>
+                            <td>${(item.price * item.quantity).toFixed(2)}</td>
+                            <td>
+                                <button class="btn btn-sm btn-danger remove-from-cart" data-index="${index}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        `;
+                        
+                        tbody.appendChild(tr);
+                        total += item.price * item.quantity;
+                    });
+                    
+                    table.appendChild(thead);
+                    table.appendChild(tbody);
+                    cartItems.appendChild(table);
+                    cartTotal.textContent = total.toFixed(2);
+                    
+                    // Thêm sự kiện cho các nút trong giỏ hàng
+                    document.querySelectorAll('.decrease-quantity').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const index = parseInt(this.dataset.index);
+                            if (cart[index].quantity > 1) {
+                                cart[index].quantity--;
+                                localStorage.setItem('cart', JSON.stringify(cart));
+                                updateCartDisplay();
+                                updateCartDisplayAuth();
+                            }
+                        });
+                    });
+                    
+                    document.querySelectorAll('.increase-quantity').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const index = parseInt(this.dataset.index);
+                            cart[index].quantity++;
+                            localStorage.setItem('cart', JSON.stringify(cart));
+                            updateCartDisplay();
+                            updateCartDisplayAuth();
+                        });
+                    });
+                    
+                    document.querySelectorAll('.remove-from-cart').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const index = parseInt(this.dataset.index);
+                            cart.splice(index, 1);
+                            localStorage.setItem('cart', JSON.stringify(cart));
+                            updateCartDisplay();
+                            updateCartDisplayAuth();
+                        });
+                    });
+                }
+            }
+            
+            // Cập nhật hiển thị giỏ hàng cho phần auth
+            function updateCartDisplayAuth() {
+                if (cartItemsAuth) {
+                    cartItemsAuth.innerHTML = '';
+                    let total = 0;
+                    
+                    if (cart.length === 0) {
+                        cartItemsAuth.innerHTML = '<p class="text-center">Giỏ hàng trống</p>';
+                        cartTotalAuth.textContent = '0';
+                        return;
+                    }
+                    
+                    const table = document.createElement('table');
+                    table.className = 'table';
+                    
+                    const thead = document.createElement('thead');
+                    thead.innerHTML = `
+                        <tr>
+                            <th>Sản Phẩm</th>
+                            <th>Giá</th>
+                            <th>Số Lượng</th>
+                            <th>Thành Tiền</th>
+                            <th></th>
+                        </tr>
+                    `;
+                    
+                    const tbody = document.createElement('tbody');
+                    
+                    cart.forEach((item, index) => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${item.name}</td>
+                            <td>${item.price}</td>
+                            <td>
+                                <div class="input-group input-group-sm" style="width: 100px;">
+                                    <button class="btn btn-outline-secondary decrease-quantity-auth" data-index="${index}">-</button>
+                                    <input type="text" class="form-control text-center" value="${item.quantity}" readonly>
+                                    <button class="btn btn-outline-secondary increase-quantity-auth" data-index="${index}">+</button>
+                                </div>
+                            </td>
+                            <td>${(item.price * item.quantity).toFixed(2)}</td>
+                            <td>
+                                <button class="btn btn-sm btn-danger remove-from-cart-auth" data-index="${index}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        `;
+                        
+                        tbody.appendChild(tr);
+                        total += item.price * item.quantity;
+                    });
+                    
+                    table.appendChild(thead);
+                    table.appendChild(tbody);
+                    cartItemsAuth.appendChild(table);
+                    cartTotalAuth.textContent = total.toFixed(2);
+                    
+                    // Thêm sự kiện cho các nút trong giỏ hàng
+                    document.querySelectorAll('.decrease-quantity-auth').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const index = parseInt(this.dataset.index);
+                            if (cart[index].quantity > 1) {
+                                cart[index].quantity--;
+                                localStorage.setItem('cart', JSON.stringify(cart));
+                                updateCartDisplay();
+                                updateCartDisplayAuth();
+                            }
+                        });
+                    });
+                    
+                    document.querySelectorAll('.increase-quantity-auth').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const index = parseInt(this.dataset.index);
+                            cart[index].quantity++;
+                            localStorage.setItem('cart', JSON.stringify(cart));
+                            updateCartDisplay();
+                            updateCartDisplayAuth();
+                        });
+                    });
+                    
+                    document.querySelectorAll('.remove-from-cart-auth').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const index = parseInt(this.dataset.index);
+                            cart.splice(index, 1);
+                            localStorage.setItem('cart', JSON.stringify(cart));
+                            updateCartDisplay();
+                            updateCartDisplayAuth();
+                        });
+                    });
+                }
+            }
+            
+            // Thêm sản phẩm vào giỏ hàng
+            if (addToCartButtons) {
+                addToCartButtons.forEach(button => {
+                    button.addEventListener('click', function() {
+                        const id = parseInt(this.dataset.id);
+                        const name = this.dataset.name;
+                        const price = parseFloat(this.dataset.price);
+                        
+                        // Kiểm tra xem sản phẩm đã có trong giỏ hàng chưa
+                        const existingItem = cart.find(item => item.id === id);
+                        
+                        if (existingItem) {
+                            existingItem.quantity++;
+                        } else {
+                            cart.push({
+                                id: id,
+                                name: name,
+                                price: price,
+                                quantity: 1
+                            });
+                        }
+                        
+                        // Lưu giỏ hàng vào localStorage
+                        localStorage.setItem('cart', JSON.stringify(cart));
+                        
+                        // Hiển thị modal giỏ hàng
+                        updateCartDisplay();
+                        updateCartDisplayAuth();
+                        if (cartModal) cartModal.show();
+                    });
+                });
+            }
+            
+            // Thêm sản phẩm vào giỏ hàng cho phần auth
+            if (addToCartButtonsAuth) {
+                addToCartButtonsAuth.forEach(button => {
+                    button.addEventListener('click', function() {
+                        const id = parseInt(this.dataset.id);
+                        const name = this.dataset.name;
+                        const price = parseFloat(this.dataset.price);
+                        
+                        // Kiểm tra xem sản phẩm đã có trong giỏ hàng chưa
+                        const existingItem = cart.find(item => item.id === id);
+                        
+                        if (existingItem) {
+                            existingItem.quantity++;
+                        } else {
+                            cart.push({
+                                id: id,
+                                name: name,
+                                price: price,
+                                quantity: 1
+                            });
+                        }
+                        
+                        // Lưu giỏ hàng vào localStorage
+                        localStorage.setItem('cart', JSON.stringify(cart));
+                        
+                        // Hiển thị modal giỏ hàng
+                        updateCartDisplay();
+                        updateCartDisplayAuth();
+                        if (cartModalAuth) cartModalAuth.show();
+                    });
+                });
+            }
+            
+            // Xử lý nút thanh toán
+            if (checkoutBtn) {
+                checkoutBtn.addEventListener('click', function() {
+                    if (cart.length === 0) {
+                        alert('Giỏ hàng trống. Vui lòng thêm sản phẩm vào giỏ hàng.');
+                        return;
+                    }
+                    
+                    // Chuyển hướng đến trang tạo đơn hàng
+                    window.location.href = '{{ url_for("create_order") }}';
+                });
+            }
+            
+            // Cập nhật hiển thị giỏ hàng khi trang được tải
+            updateCartDisplay();
+            updateCartDisplayAuth();
+        });
+    </script>
+    {% endif %}
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

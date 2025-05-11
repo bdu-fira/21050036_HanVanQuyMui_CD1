@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Thêm Danh Mục - Hệ Thống Quản Lý Bán Hàng{% endblock %}
+
+{% block header %}Thêm Danh Mục{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('add_category') }}">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Tên Danh Mục</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Mô Tả</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Thuộc Tính Danh Mục</label>
+                        <div id="attributes-container">
+                            <div class="row mb-2 attribute-row">
+                                <div class="col-md-6">
+                                    <input type="text" class="form-control" name="attribute_name[]" placeholder="Tên Thuộc Tính">
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="attribute_required[]">
+                                        <label class="form-check-label">Bắt buộc</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="button" class="btn btn-sm btn-danger remove-attribute">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-secondary mt-2" id="add-attribute-btn">
+                            <i class="fas fa-plus-circle me-1"></i>Thêm Thuộc Tính
+                        </button>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('categories') }}" class="btn btn-secondary">Hủy</a>
+                        <button type="submit" class="btn btn-primary">Lưu Danh Mục</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const attributesContainer = document.getElementById('attributes-container');
+        const addAttributeBtn = document.getElementById('add-attribute-btn');
+        
+        // Add attribute row
+        addAttributeBtn.addEventListener('click', function() {
+            const newRow = document.createElement('div');
+            newRow.className = 'row mb-2 attribute-row';
+            newRow.innerHTML = `
+                <div class="col-md-6">
+                    <input type="text" class="form-control" name="attribute_name[]" placeholder="Tên Thuộc Tính">
+                </div>
+                <div class="col-md-4">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="attribute_required[]">
+                        <label class="form-check-label">Bắt buộc</label>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-sm btn-danger remove-attribute">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            
+            attributesContainer.appendChild(newRow);
+            
+            // Add event listener to the new remove button
+            newRow.querySelector('.remove-attribute').addEventListener('click', function() {
+                newRow.remove();
+            });
+        });
+        
+        // Remove attribute row (for initial row)
+        document.querySelector('.remove-attribute').addEventListener('click', function() {
+            this.closest('.attribute-row').remove();
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Khách Hàng - Hệ Thống Quản Lý Bán Hàng{% endblock %}
+
+{% block header %}Khách Hàng{% endblock %}
+
+{% block content %}
+<div class="mb-3 d-flex justify-content-between">
+    <a href="{{ url_for('add_customer') }}" class="btn btn-primary">
+        <i class="fas fa-plus-circle me-2"></i>Thêm Khách Hàng Mới
+    </a>
+    
+    <form action="{{ url_for('customers') }}" method="GET" class="d-flex">
+        <input type="text" name="search" class="form-control me-2" placeholder="Tìm kiếm khách hàng..." value="{{ search_query }}">
+        <button type="submit" class="btn btn-secondary">
+            <i class="fas fa-search me-1"></i>Tìm Kiếm
+        </button>
+    </form>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Tên</th>
+                        <th>Điện Thoại</th>
+                        <th>Email</th>
+                        <th>Địa Chỉ</th>
+                        <th>Đơn Hàng</th>
+                        <th>Thao Tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for customer in customers %}
+                    <tr>
+                        <td>{{ customer.id }}</td>
+                        <td>{{ customer.name }}</td>
+                        <td>{{ customer.phone }}</td>
+                        <td>{{ customer.email }}</td>
+                        <td>{{ customer.address }}</td>
+                        <td>
+                            <a href="{{ url_for('view_customer', id=customer.id) }}" class="btn btn-sm btn-info">
+                                {{ customer.orders|length }} đơn hàng
+                            </a>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('edit_customer', id=customer.id) }}" class="btn btn-sm btn-warning">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{{ url_for('delete_customer', id=customer.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Bạn có chắc chắn muốn xóa khách hàng này?')">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center">Không tìm thấy khách hàng nào</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

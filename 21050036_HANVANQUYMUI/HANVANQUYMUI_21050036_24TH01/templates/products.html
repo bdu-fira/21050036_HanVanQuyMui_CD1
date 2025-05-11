@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Sản Phẩm - Hệ Thống Quản Lý Bán Hàng{% endblock %}
+
+{% block header %}Sản Phẩm{% endblock %}
+
+{% block content %}
+<div class="mb-3 d-flex justify-content-between">
+    <a href="{{ url_for('add_product') }}" class="btn btn-primary">
+        <i class="fas fa-plus-circle me-2"></i>Thêm Sản Phẩm Mới
+    </a>
+    
+    <div class="d-flex">
+        <form action="{{ url_for('products') }}" method="GET" class="d-flex">
+            <select name="category_id" class="form-select me-2" style="width: 200px;">
+                <option value="">Tất Cả Danh Mục</option>
+                {% for category in categories %}
+                <option value="{{ category.id }}" {% if current_category == category.id %}selected{% endif %}>{{ category.name }}</option>
+                {% endfor %}
+            </select>
+            <input type="text" name="search" class="form-control me-2" placeholder="Tìm kiếm sản phẩm..." value="{{ search_query }}">
+            <button type="submit" class="btn btn-secondary">
+                <i class="fas fa-search me-1"></i>Lọc
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Hình Ảnh</th>
+                        <th>Tên</th>
+                        <th>Danh Mục</th>
+                        <th>Giá</th>
+                        <th>Tồn Kho</th>
+                        <th>Thao Tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr>
+                        <td>{{ product.id }}</td>
+                        <td>
+                            {% if product.image_path %}
+                           <img src="{{ url_for('static', filename='uploads/20250510111957_ao_thun_nam.jpg') }}" alt="Ảnh sản phẩm" style="width: 150px;">
+                            {% else %}
+                            <div class="text-center text-muted">Không có ảnh</div>
+                            {% endif %}
+                        </td>
+                        <td>{{ product.name }}</td>
+                        <td>{{ product.category.name if product.category else 'Chưa phân loại' }}</td>
+                        <td>{{ product.price|round(2) }}</td>
+                        <td>
+                            <span class="badge {% if product.stock > 10 %}bg-success{% elif product.stock > 0 %}bg-warning{% else %}bg-danger{% endif %}">
+                                {{ product.stock }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('edit_product', id=product.id) }}" class="btn btn-sm btn-warning">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{{ url_for('delete_product', id=product.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center">Không tìm thấy sản phẩm nào</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

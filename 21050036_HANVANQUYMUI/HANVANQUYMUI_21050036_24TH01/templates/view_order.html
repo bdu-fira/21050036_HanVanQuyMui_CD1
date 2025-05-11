@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Xem Đơn Hàng - Hệ Thống Quản Lý Bán Hàng{% endblock %}
+
+{% block header %}Đơn Hàng #{{ order.order_number }}{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <a href="{{ url_for('orders') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Quay Lại Đơn Hàng
+    </a>
+    <button class="btn btn-primary ms-2" onclick="window.print()">
+        <i class="fas fa-print me-2"></i>In Đơn Hàng
+    </button>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Chi Tiết Đơn Hàng</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <h6>Thông Tin Đơn Hàng</h6>
+                        <p><strong>Mã Đơn Hàng:</strong> {{ order.order_number }}</p>
+                        <p><strong>Ngày:</strong> {{ order.order_date.strftime('%d-%m-%Y %H:%M') }}</p>
+                        <p><strong>Trạng Thái:</strong> <span class="badge bg-success">
+                            {% if order.status == 'completed' %}
+                                Hoàn Thành
+                            {% elif order.status == 'pending' %}
+                                Đang Xử Lý
+                            {% elif order.status == 'cancelled' %}
+                                Đã Hủy
+                            {% else %}
+                                {{ order.status }}
+                            {% endif %}
+                        </span></p>
+                        <p><strong>Người Tạo:</strong> {{ order.user.username }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Thông Tin Khách Hàng</h6>
+                        <p><strong>Tên:</strong> {{ order.customer.name }}</p>
+                        <p><strong>Điện Thoại:</strong> {{ order.customer.phone }}</p>
+                        <p><strong>Email:</strong> {{ order.customer.email }}</p>
+                        <p><strong>Địa Chỉ:</strong> {{ order.customer.address }}</p>
+                    </div>
+                </div>
+                
+                {% if order.notes %}
+                <div class="mb-3">
+                    <h6>Ghi Chú Đơn Hàng</h6>
+                    <p>{{ order.notes }}</p>
+                </div>
+                {% endif %}
+                
+                <h6>Sản Phẩm Trong Đơn</h6>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Sản Phẩm</th>
+                                <th>Giá</th>
+                                <th>Số Lượng</th>
+                                <th class="text-end">Thành Tiền</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in order.items %}
+                            <tr>
+                                <td>{{ item.product.name }}</td>
+                                <td>{{ item.price|round(2) }}</td>
+                                <td>{{ item.quantity }}</td>
+                                <td class="text-end">{{ (item.price * item.quantity)|round(2) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th colspan="3" class="text-end">Tổng:</th>
+                                <th class="text-end">{{ order.total_amount|round(2) }}</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Thao Tác</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('orders') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Quay Lại Đơn Hàng
+                    </a>
+                    <a href="{{ url_for('view_customer', id=order.customer_id) }}" class="btn btn-info">
+                        <i class="fas fa-user me-2"></i>Xem Khách Hàng
+                    </a>
+                    <button class="btn btn-primary" onclick="window.print()">
+                        <i class="fas fa-print me-2"></i>In Đơn Hàng
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

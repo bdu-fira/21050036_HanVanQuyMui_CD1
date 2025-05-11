@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}Báo Cáo Năm - Hệ Thống Quản Lý Bán Hàng{% endblock %}
+
+{% block header %}Báo Cáo Năm: {{ year }}{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <a href="{{ url_for('reports') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Quay Lại Báo Cáo
+    </a>
+    <button class="btn btn-primary ms-2" onclick="window.print()">
+        <i class="fas fa-print me-2"></i>In Báo Cáo
+    </button>
+</div>
+
+<div class="row">
+    <div class="col-md-3 mb-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title">Tổng Doanh Thu</h5>
+                <h2>{{ total_sales|round(2) }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title">Đơn Hàng</h5>
+                <h2>{{ order_count }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h5 class="card-title">Giá Trị Đơn Trung Bình</h5>
+                <h2>{{ (total_sales / order_count)|round(2) if order_count > 0 else 0 }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <h5 class="card-title">Trung Bình Tháng</h5>
+                <h2>{{ (total_sales / 12)|round(2) }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Doanh Thu Theo Tháng Năm {{ year }}</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="monthlySalesChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Doanh Thu Theo Quý</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="quarterlySalesChart" height="250"></canvas>
+                <div class="table-responsive mt-3">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Quý</th>
+                                <th class="text-end">Doanh Thu</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Q1 (T1-T3)</td>
+                                <td class="text-end">{{ quarterly_data[0]|round(2) }}</td>
+                            </tr>
+                            <tr>
+                                <td>Q2 (T4-T6)</td>
+                                <td class="text-end">{{ quarterly_data[1]|round(2) }}</td>
+                            </tr>
+                            <tr>
+                                <td>Q3 (T7-T9)</td>
+                                <td class="text-end">{{ quarterly_data[2]|round(2) }}</td>
+                            </tr>
+                            <tr>
+                                <td>Q4 (T10-T12)</td>
+                                <td class="text-end">{{ quarterly_data[3]|round(2) }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Sản Phẩm Bán Chạy Năm {{ year }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Sản Phẩm</th>
+                                <th>Số Lượng Đã Bán</th>
+                                <th class="text-end">Doanh Thu</th>
+                                <th class="text-end">% Tổng Doanh Thu</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in top_products %}
+                            <tr>
+                                <td>{{ product.name }}</td>
+                                <td>{{ product.total_sold }}</td>
+                                <td class="text-end">{{ product.total_revenue|round(2) }}</td>
+                                <td class="text-end">{{ ((product.total_revenue / total_sales) * 100)|round(2) }}%</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center">Không có dữ liệu</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Monthly sales chart
+        const monthlyCtx = document.getElementById('monthlySalesChart').getContext('2d');
+        const monthlySalesChart = new Chart(monthlyCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ months|tojson }},
+                datasets: [{
+                    label: 'Doanh Thu Theo Tháng',
+                    data: {{ sales_data|tojson }},
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Doanh Thu'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Tháng'
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Quarterly sales chart
+        const quarterlyCtx = document.getElementById('quarterlySalesChart').getContext('2d');
+        const quarterlySalesData = {{ quarterly_data|tojson }};
+        const quarterlySalesChart = new Chart(quarterlyCtx, {
+            type: 'pie',
+            data: {
+                labels: ['Q1 (T1-T3)', 'Q2 (T4-T6)', 'Q3 (T7-T9)', 'Q4 (T10-T12)'],
+                datasets: [{
+                    data: quarterlySalesData,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.5)',
+                        'rgba(54, 162, 235, 0.5)',
+                        'rgba(255, 206, 86, 0.5)',
+                        'rgba(75, 192, 192, 0.5)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    title: {
+                        display: true,
+                        text: 'Phân Bổ Doanh Thu Theo Quý'
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}
